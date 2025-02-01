@@ -746,21 +746,29 @@
       <source src="https://raw.githubusercontent.com/schmich/instascan-build/master/examples/beep.wav" type="audio/wav" />
     </audio>
     
+    <!-- Dummy sendMessage definition to avoid "not defined" error -->
+    <script>
+      // Define a default sendMessage so that later Firebase integration can override it.
+      window.sendMessage = function() {
+        console.log("Default sendMessage called");
+      };
+    </script>
+    
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Replace the following configuration with your Firebase project's config
+        // Replace the following configuration with your Firebase project's config details.
         const firebaseConfig = {
-  apiKey: "AIzaSyBfEjkY3HW5sBWjBNGL8bSducn0QxoIVBM",
-  authDomain: "githubchatroom.firebaseapp.com",
-  projectId: "githubchatroom",
-  storageBucket: "githubchatroom.firebasestorage.app",
-  messagingSenderId: "508251331819",
-  appId: "1:508251331819:web:941f43eb74c3721ffcf2ae",
-  measurementId: "G-T2Q6S8P5PE"
-};
+          apiKey: "AIzaSyBfEjkY3HW5sBWjBNGL8bSducn0QxoIVBM",
+          authDomain: "githubchatroom.firebaseapp.com",
+          projectId: "githubchatroom",
+          storageBucket: "githubchatroom.firebasestorage.app",
+          messagingSenderId: "508251331819",
+          appId: "1:508251331819:web:941f43eb74c3721ffcf2ae",
+          measurementId: "G-T2Q6S8P5PE"
+        };
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
@@ -826,27 +834,25 @@
           appendMessageElement(msg, true);
         }
 
-        // Override the sendMessage function
+        // Override the sendMessage function to send a global message
         var originalSendMessage = sendMessage;
         sendMessage = function() {
           sendGlobalMessage();
         };
 
         // On page load, load the chatrooms. If none exist, create a default room.
-        document.addEventListener('DOMContentLoaded', function() {
-          loadChatrooms();
-          db.ref('chatrooms').once('value').then(function(snapshot) {
-            if (!snapshot.exists()) {
-              var defaultRoomId = createChatroom("Global Chat");
-              openChatroom(defaultRoomId, "Global Chat");
-            } else {
-              // Open the first available chatroom
-              for (var roomId in snapshot.val()) {
-                openChatroom(roomId, snapshot.val()[roomId].name);
-                break;
-              }
+        loadChatrooms();
+        db.ref('chatrooms').once('value').then(function(snapshot) {
+          if (!snapshot.exists()) {
+            var defaultRoomId = createChatroom("Global Chat");
+            openChatroom(defaultRoomId, "Global Chat");
+          } else {
+            // Open the first available chatroom
+            for (var roomId in snapshot.val()) {
+              openChatroom(roomId, snapshot.val()[roomId].name);
+              break;
             }
-          });
+          }
         });
 
         // Add a "New Chatroom" button to the sidebar
@@ -863,24 +869,14 @@
           });
           document.querySelector('.sidebar').appendChild(btn);
         }
-        document.addEventListener('DOMContentLoaded', addNewChatroomButton);
-
-        // (Optional) You can add more Firebase-related functions here such as export/import
+        addNewChatroomButton();
       });
     </script>
     
-    <!-- Main Chat Script (wrapped in DOMContentLoaded) -->
+    <!-- Main Chat Script (dummy implementation for demonstration) -->
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Place your existing chat code functions here:
-        // For example, you should already have functions like:
-        // - generateId()
-        // - formatTimestamp(date)
-        // - renderChatList(), renderChatHeader(), renderMessages(), appendMessageElement(msg, updateModel)
-        //
-        // Ensure that these functions are accessible globally.
-        //
-        // For demonstration, here’s a dummy implementation of appendMessageElement:
+        // Dummy implementations for required functions.
         window.generateId = function() {
           return '_' + Math.random().toString(36).substr(2, 9);
         };
@@ -888,7 +884,6 @@
           return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         };
         window.appendMessageElement = function(msg, updateModel) {
-          // Append the message to the chatMessages element
           var chatMessagesEl = document.getElementById('chatMessages');
           var msgEl = document.createElement('div');
           msgEl.className = 'message ' + (msg.sender === "user" ? "user" : "ai");
@@ -899,7 +894,7 @@
           chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
         };
 
-        // Call any existing initialization functions if necessary.
+        // (You can add further initialization here if needed.)
       });
     </script>
   </body>
