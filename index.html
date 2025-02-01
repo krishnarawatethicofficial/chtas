@@ -601,6 +601,7 @@
         z-index: 10;
         transition: opacity 0.3s;
       }
+      /* Media queries for responsiveness */
       @media screen and (max-width: 768px) {
         .sidebar {
           width: 260px;
@@ -611,6 +612,23 @@
         .header-actions button {
           padding: 6px 10px;
           font-size: 0.9em;
+        }
+      }
+      @media screen and (max-width: 480px) {
+        /* For very small devices, stack the sidebar above the chat area */
+        .container {
+          flex-direction: column;
+        }
+        .sidebar {
+          width: 100%;
+          height: 40vh;
+        }
+        .chat-area {
+          height: 60vh;
+        }
+        .header-actions button {
+          padding: 4px 8px;
+          font-size: 0.8em;
         }
       }
     </style>
@@ -725,7 +743,7 @@
       <div class="context-menu-item" data-bg="https://source.unsplash.com/collection/888146/800x600">Urban</div>
       <div class="context-menu-item" data-bg="https://source.unsplash.com/collection/827743/800x600">Abstract</div>
     </div>
-    <!-- Use a hosted beep file (update the URL if needed) -->
+    <!-- Use a hosted beep file -->
     <audio id="notificationSound">
       <source src="https://raw.githubusercontent.com/schmich/instascan-build/master/examples/beep.wav" type="audio/wav" />
     </audio>
@@ -733,109 +751,110 @@
     <!-- Main Chat Script (wrapped in DOMContentLoaded) -->
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // (Place your existing chat code here.)
-        // Example helper functions:
+        // (Your existing chat code goes here.)
+        // For example, helper functions:
         function generateId() {
           return '_' + Math.random().toString(36).substr(2, 9);
         }
         function formatTimestamp(date) {
           return date.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
         }
-        // Your existing functions such as renderChatList, renderChatHeader, renderMessages, appendMessageElement, etc.
+        // ... your existing functions like renderChatList, renderChatHeader, renderMessages, appendMessageElement, etc.
         renderChatList();
         renderChatHeader();
         renderMessages();
       });
     </script>
     
-   <!-- Real-Time Chat via PeerJS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.3.2/peerjs.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Create a new Peer instance.
-  // (Optional: pass configuration options if you run your own PeerServer.)
-  var peer = new Peer(null, { debug: 2 });
-  var conn;
+    <!-- Real-Time Chat via PeerJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.3.2/peerjs.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Create a new Peer instance.
+        var peer = new Peer(null, { debug: 3 });
+        var conn;
 
-  // Log any errors from the Peer instance.
-  peer.on('error', function(err) {
-    console.error('Peer error:', err);
-  });
+        peer.on('error', function(err) {
+          console.error('Peer error:', err);
+        });
 
-  // When the peer connection opens, display the peer ID.
-  peer.on('open', function(id) {
-    console.log("My peer ID is: " + id);
-    var peerIdDisplay = document.createElement("div");
-    peerIdDisplay.id = "peerIdDisplay";
-    peerIdDisplay.style.position = "fixed";
-    peerIdDisplay.style.top = "10px";
-    peerIdDisplay.style.right = "10px";
-    peerIdDisplay.style.background = "#fff";
-    peerIdDisplay.style.padding = "5px 10px";
-    peerIdDisplay.style.borderRadius = "5px";
-    peerIdDisplay.style.boxShadow = "0 2px 5px rgba(0,0,0,0.3)";
-    peerIdDisplay.textContent = "Your Peer ID: " + id;
-    document.body.appendChild(peerIdDisplay);
-  });
+        peer.on('open', function(id) {
+          console.log("My peer ID is: " + id);
+          // Shorten the peer ID to 8 characters
+          var shortId = id.substring(0, 8);
+          var peerIdDisplay = document.createElement("div");
+          peerIdDisplay.id = "peerIdDisplay";
+          peerIdDisplay.style.position = "fixed";
+          peerIdDisplay.style.top = "10px";
+          peerIdDisplay.style.right = "10px";
+          peerIdDisplay.style.background = "#fff";
+          peerIdDisplay.style.padding = "5px 10px";
+          peerIdDisplay.style.borderRadius = "5px";
+          peerIdDisplay.style.boxShadow = "0 2px 5px rgba(0,0,0,0.3)";
+          peerIdDisplay.textContent = "Your Peer ID: " + shortId;
+          document.body.appendChild(peerIdDisplay);
+        });
 
-  // Create a simple UI to allow a user to connect to another peer.
-  var connectDiv = document.createElement("div");
-  connectDiv.style.position = "fixed";
-  connectDiv.style.top = "50px";
-  connectDiv.style.right = "10px";
-  connectDiv.style.background = "#fff";
-  connectDiv.style.padding = "5px 10px";
-  connectDiv.style.borderRadius = "5px";
-  connectDiv.style.boxShadow = "0 2px 5px rgba(0,0,0,0.3)";
-  connectDiv.innerHTML =
-    'Connect to Peer: <input id="peerInput" type="text" placeholder="Peer ID" style="width:150px;"> <button id="connectButton">Connect</button>';
-  document.body.appendChild(connectDiv);
+        // Simple UI for connecting to a peer.
+        var connectDiv = document.createElement("div");
+        connectDiv.style.position = "fixed";
+        connectDiv.style.top = "50px";
+        connectDiv.style.right = "10px";
+        connectDiv.style.background = "#fff";
+        connectDiv.style.padding = "5px 10px";
+        connectDiv.style.borderRadius = "5px";
+        connectDiv.style.boxShadow = "0 2px 5px rgba(0,0,0,0.3)";
+        connectDiv.innerHTML =
+          'Connect to Peer: <input id="peerInput" type="text" placeholder="Peer ID" style="width:150px;"> <button id="connectButton">Connect</button>';
+        document.body.appendChild(connectDiv);
 
-  document.getElementById("connectButton").addEventListener("click", function(){
-    var peerId = document.getElementById("peerInput").value;
-    if(peerId) {
-      conn = peer.connect(peerId);
-      conn.on('open', function() {
-        console.log("Connected to peer: " + peerId);
+        document.getElementById("connectButton").addEventListener("click", function(){
+          var peerId = document.getElementById("peerInput").value;
+          if(peerId) {
+            console.log("Attempting connection to peer: " + peerId);
+            conn = peer.connect(peerId);
+            conn.on('open', function() {
+              console.log("Connected to peer: " + peerId);
+            });
+            conn.on('data', function(data) {
+              console.log("Received data:", data);
+              data.sender = "remote";
+              appendMessageElement(data, false);
+            });
+            conn.on('error', function(err) {
+              console.error("Connection error:", err);
+            });
+          }
+        });
+
+        // Listen for incoming connections.
+        peer.on('connection', function(connection) {
+          console.log("Incoming connection from: " + connection.peer);
+          conn = connection;
+          conn.on('data', function(data) {
+            console.log("Received data on incoming connection:", data);
+            data.sender = "remote";
+            appendMessageElement(data, false);
+          });
+          conn.on('error', function(err) {
+            console.error("Incoming connection error:", err);
+          });
+        });
+
+        // Rename the sendMessage override variable to avoid duplicates.
+        var peerOriginalSendMessage = sendMessage;
+        sendMessage = function() {
+          peerOriginalSendMessage();
+          var chat = chatsData[activeChatId];
+          var lastMsg = chat.messages[chat.messages.length - 1];
+          if (conn && conn.open && lastMsg) {
+            console.log("Sending message via peer:", lastMsg);
+            conn.send(lastMsg);
+          } else {
+            console.warn("No open peer connection to send message");
+          }
+        };
       });
-      conn.on('data', function(data) {
-        console.log("Received data:", data);
-        // Mark this message as coming from a remote peer.
-        data.sender = "remote";
-        appendMessageElement(data, false);
-      });
-      conn.on('error', function(err) {
-        console.error("Connection error:", err);
-      });
-    }
-  });
-
-  // Listen for incoming connections.
-  peer.on('connection', function(connection) {
-    conn = connection;
-    conn.on('data', function(data) {
-      console.log("Received data on incoming connection:", data);
-      data.sender = "remote";
-      appendMessageElement(data, false);
-    });
-    conn.on('error', function(err) {
-      console.error("Incoming connection error:", err);
-    });
-  });
-
-  // Rename our sendMessage override variable to avoid duplicate declarations.
-  var peerOriginalSendMessage = sendMessage;
-  sendMessage = function() {
-    peerOriginalSendMessage();
-    var chat = chatsData[activeChatId];
-    var lastMsg = chat.messages[chat.messages.length - 1];
-    if (conn && conn.open && lastMsg) {
-      conn.send(lastMsg);
-    } else {
-      console.warn("No open peer connection to send message");
-    }
-  };
-});
-</script>
+    </script>
   </body>
 </html>
