@@ -746,9 +746,8 @@
       <source src="https://raw.githubusercontent.com/schmich/instascan-build/master/examples/beep.wav" type="audio/wav" />
     </audio>
     
-    <!-- Dummy sendMessage definition to avoid "not defined" error -->
+    <!-- Dummy sendMessage definition to ensure it's defined -->
     <script>
-      // Define a default sendMessage so that later Firebase integration can override it.
       window.sendMessage = function() {
         console.log("Default sendMessage called");
       };
@@ -759,12 +758,13 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Replace the following configuration with your Firebase project's config details.
+        // Replace with your own Firebase configuration details.
         const firebaseConfig = {
           apiKey: "AIzaSyBfEjkY3HW5sBWjBNGL8bSducn0QxoIVBM",
           authDomain: "githubchatroom.firebaseapp.com",
+          databaseURL: "https://githubchatroom-default-rtdb.firebaseio.com",
           projectId: "githubchatroom",
-          storageBucket: "githubchatroom.firebasestorage.app",
+          storageBucket: "githubchatroom.appspot.com",
           messagingSenderId: "508251331819",
           appId: "1:508251331819:web:941f43eb74c3721ffcf2ae",
           measurementId: "G-T2Q6S8P5PE"
@@ -823,7 +823,7 @@
           if (!msgText || !currentRoomId) return;
           var msg = {
             id: generateId(),
-            sender: "user", // In a production app, use proper authentication
+            sender: "user", // For production, add proper authentication
             type: "text",
             text: msgText,
             timestamp: new Date().toISOString()
@@ -840,14 +840,13 @@
           sendGlobalMessage();
         };
 
-        // On page load, load the chatrooms. If none exist, create a default room.
+        // On page load, load chatrooms. If none exist, create a default room.
         loadChatrooms();
         db.ref('chatrooms').once('value').then(function(snapshot) {
           if (!snapshot.exists()) {
             var defaultRoomId = createChatroom("Global Chat");
             openChatroom(defaultRoomId, "Global Chat");
           } else {
-            // Open the first available chatroom
             for (var roomId in snapshot.val()) {
               openChatroom(roomId, snapshot.val()[roomId].name);
               break;
@@ -873,10 +872,10 @@
       });
     </script>
     
-    <!-- Main Chat Script (dummy implementation for demonstration) -->
+    <!-- Main Chat Script (dummy implementations) -->
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Dummy implementations for required functions.
+        // Dummy implementations to ensure required functions exist.
         window.generateId = function() {
           return '_' + Math.random().toString(36).substr(2, 9);
         };
@@ -893,8 +892,6 @@
           chatMessagesEl.appendChild(msgEl);
           chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
         };
-
-        // (You can add further initialization here if needed.)
       });
     </script>
   </body>
