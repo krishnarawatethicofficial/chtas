@@ -84,7 +84,6 @@
         border: none;
         border-radius: 4px;
         cursor: pointer;
-        transition: background 0.2s;
       }
       .sidebar-header button:hover {
         background: #0077b3;
@@ -104,7 +103,6 @@
       }
       .chat-item h4 {
         font-size: 1em;
-        margin-bottom: 5px;
       }
       .chat-area {
         flex: 1;
@@ -119,12 +117,6 @@
         border-bottom: 1px solid #393e42;
         display: flex;
         align-items: center;
-      }
-      .chat-header img {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        object-fit: cover;
       }
       .chat-header h3 {
         margin-left: 15px;
@@ -159,7 +151,6 @@
         background: var(--accent-dark);
         color: #fff;
         cursor: pointer;
-        transition: background 0.2s;
       }
       .chat-input button:hover {
         background: #0077b3;
@@ -184,10 +175,6 @@
         .chat-area {
           height: 60vh;
         }
-        .chat-input button {
-          padding: 6px 10px;
-          font-size: 0.9em;
-        }
       }
     </style>
   </head>
@@ -203,7 +190,6 @@
       </div>
       <div class="chat-area" id="chatArea">
         <div class="chat-header" id="chatHeader">
-          <img src="" alt="Avatar" id="headerAvatar" style="display:none;" />
           <h3 id="headerName">Chatroom Name</h3>
         </div>
         <div class="chat-messages" id="chatMessages"></div>
@@ -226,7 +212,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Replace these with your Firebase project details
+        // Replace with your Firebase configuration details.
         const firebaseConfig = {
           apiKey: "AIzaSyBfEjkY3HW5sBWjBNGL8bSducn0QxoIVBM",
           authDomain: "githubchatroom.firebaseapp.com",
@@ -253,7 +239,7 @@
           return newRoomRef.key;
         }
 
-        // Load the list of chatrooms and display them
+        // Load and display the list of chatrooms
         function loadChatrooms() {
           db.ref('chatrooms').on('value', function(snapshot) {
             var rooms = snapshot.val();
@@ -278,14 +264,13 @@
           currentRoomId = roomId;
           document.getElementById('headerName').textContent = roomName;
           document.getElementById('chatMessages').innerHTML = '';
-          // Listen for messages in this room
           db.ref('messages/' + roomId).on('child_added', function(snapshot) {
             var msg = snapshot.val();
             appendMessageElement(msg, false);
           });
         }
 
-        // Send a message to the current chatroom
+        // Send a global message
         function sendGlobalMessage() {
           var msgText = document.getElementById('chatInput').value.trim();
           if (!msgText || !currentRoomId) return;
@@ -324,7 +309,7 @@
           }
         });
 
-        // Add a "New Chatroom" button functionality
+        // New Chatroom button
         document.getElementById('newChatButton').addEventListener('click', function() {
           var name = prompt("Enter chatroom name:");
           if (name) {
@@ -338,7 +323,6 @@
     <!-- Main Chat Script (dummy implementations) -->
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Dummy implementations for required functions.
         window.generateId = function() {
           return '_' + Math.random().toString(36).substr(2, 9);
         };
@@ -356,12 +340,10 @@
           chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
         };
 
-        // Hook the Send button to sendMessage()
+        // Hook Send button and Enter key to sendMessage()
         document.getElementById('sendButton').addEventListener('click', function() {
           sendMessage();
         });
-
-        // Also send on Enter key
         document.getElementById('chatInput').addEventListener('keypress', function(e) {
           if (e.key === "Enter") sendMessage();
         });
