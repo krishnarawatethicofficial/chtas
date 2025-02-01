@@ -601,7 +601,7 @@
         z-index: 10;
         transition: opacity 0.3s;
       }
-      /* Media queries for responsiveness */
+      /* Responsive adjustments */
       @media screen and (max-width: 768px) {
         .sidebar {
           width: 260px;
@@ -615,7 +615,6 @@
         }
       }
       @media screen and (max-width: 480px) {
-        /* For very small devices, stack the sidebar above the chat area */
         .container {
           flex-direction: column;
         }
@@ -639,10 +638,10 @@
       <div class="sidebar">
         <div class="sidebar-header">
           Chats
-          <button class="new-chat" id="newChatButton">New Chat</button>
+          <button class="new-chat" id="newChatButton">New Chatroom</button>
         </div>
         <div class="sidebar-search">
-          <input type="text" id="chatSearch" placeholder="Search chats..." />
+          <input type="text" id="chatSearch" placeholder="Search chatrooms..." />
         </div>
         <div class="chat-list" id="chatList"></div>
         <button id="toggleArchiveButton" style="margin:10px; padding:5px 10px; background: var(--accent-dark); color:#fff; border:none; border-radius:5px; cursor:pointer;">
@@ -653,10 +652,9 @@
         <div class="chat-header" id="chatHeader">
           <div class="chat-info">
             <img src="" alt="Avatar" id="headerAvatar" />
-            <h3 id="headerName">Chat Name</h3>
+            <h3 id="headerName">Chatroom Name</h3>
           </div>
           <div class="header-actions">
-            <button id="voiceCommandButton">Voice Command</button>
             <button id="exportChatButton">Export Chat</button>
             <button id="importChatButton">Import Chat</button>
             <button id="searchChatButton">Search Chat</button>
@@ -672,10 +670,10 @@
           <input type="text" id="messageSearchInput" placeholder="Search messages..." />
         </div>
         <div class="pinned-message" id="pinnedMessage">
-          Welcome to our chat! Please be respectful.
+          Welcome to our global chat! Please be respectful.
         </div>
         <div class="chat-messages" id="chatMessages"></div>
-        <div class="typing-indicator" id="typingIndicator">AI is typing...</div>
+        <div class="typing-indicator" id="typingIndicator">Typing...</div>
         <div class="chat-input">
           <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off" />
           <button id="emojiButton">😀</button>
@@ -748,112 +746,160 @@
       <source src="https://raw.githubusercontent.com/schmich/instascan-build/master/examples/beep.wav" type="audio/wav" />
     </audio>
     
-    <!-- Main Chat Script (wrapped in DOMContentLoaded) -->
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // (Your existing chat code goes here.)
-        // For example, helper functions:
-        function generateId() {
-          return '_' + Math.random().toString(36).substr(2, 9);
+        // Replace the following configuration with your Firebase project's config
+        const firebaseConfig = {
+  apiKey: "AIzaSyBfEjkY3HW5sBWjBNGL8bSducn0QxoIVBM",
+  authDomain: "githubchatroom.firebaseapp.com",
+  projectId: "githubchatroom",
+  storageBucket: "githubchatroom.firebasestorage.app",
+  messagingSenderId: "508251331819",
+  appId: "1:508251331819:web:941f43eb74c3721ffcf2ae",
+  measurementId: "G-T2Q6S8P5PE"
+};
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
+
+        // Global variable for the current room ID
+        var currentRoomId = null;
+
+        // Create a new chatroom in Firebase
+        function createChatroom(name) {
+          var newRoomRef = db.ref('chatrooms').push();
+          newRoomRef.set({
+            name: name,
+            createdAt: firebase.database.ServerValue.TIMESTAMP
+          });
+          return newRoomRef.key;
         }
-        function formatTimestamp(date) {
-          return date.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+
+        // Load and display the list of chatrooms globally
+        function loadChatrooms() {
+          db.ref('chatrooms').on('value', function(snapshot) {
+            var rooms = snapshot.val();
+            var chatListEl = document.getElementById('chatList');
+            chatListEl.innerHTML = '';
+            for (var roomId in rooms) {
+              var room = rooms[roomId];
+              var item = document.createElement('div');
+              item.className = 'chat-item';
+              item.dataset.roomId = roomId;
+              item.innerHTML = `<div class="chat-info"><h4>${room.name}</h4></div>`;
+              item.addEventListener('click', function() {
+                openChatroom(this.dataset.roomId, rooms[this.dataset.roomId].name);
+              });
+              chatListEl.appendChild(item);
+            }
+          });
         }
-        // ... your existing functions like renderChatList, renderChatHeader, renderMessages, appendMessageElement, etc.
-        renderChatList();
-        renderChatHeader();
-        renderMessages();
+
+        // Open a chatroom: update header and listen for messages
+        function openChatroom(roomId, roomName) {
+          currentRoomId = roomId;
+          document.getElementById('headerName').textContent = roomName;
+          document.getElementById('chatMessages').innerHTML = '';
+          // Listen for new messages in this room
+          db.ref('messages/' + roomId).on('child_added', function(snapshot) {
+            var msg = snapshot.val();
+            appendMessageElement(msg, false);
+          });
+        }
+
+        // Send a global message to the current chatroom
+        function sendGlobalMessage() {
+          var msgText = document.getElementById('chatInput').value.trim();
+          if (!msgText || !currentRoomId) return;
+          var msg = {
+            id: generateId(),
+            sender: "user", // In a production app, use proper authentication
+            type: "text",
+            text: msgText,
+            timestamp: new Date().toISOString()
+          };
+          // Push message to Firebase under this room
+          db.ref('messages/' + currentRoomId).push(msg);
+          document.getElementById('chatInput').value = '';
+          appendMessageElement(msg, true);
+        }
+
+        // Override the sendMessage function
+        var originalSendMessage = sendMessage;
+        sendMessage = function() {
+          sendGlobalMessage();
+        };
+
+        // On page load, load the chatrooms. If none exist, create a default room.
+        document.addEventListener('DOMContentLoaded', function() {
+          loadChatrooms();
+          db.ref('chatrooms').once('value').then(function(snapshot) {
+            if (!snapshot.exists()) {
+              var defaultRoomId = createChatroom("Global Chat");
+              openChatroom(defaultRoomId, "Global Chat");
+            } else {
+              // Open the first available chatroom
+              for (var roomId in snapshot.val()) {
+                openChatroom(roomId, snapshot.val()[roomId].name);
+                break;
+              }
+            }
+          });
+        });
+
+        // Add a "New Chatroom" button to the sidebar
+        function addNewChatroomButton() {
+          var btn = document.createElement('button');
+          btn.textContent = "New Chatroom";
+          btn.style.margin = "10px";
+          btn.addEventListener('click', function() {
+            var name = prompt("Enter chatroom name:");
+            if (name) {
+              var roomId = createChatroom(name);
+              openChatroom(roomId, name);
+            }
+          });
+          document.querySelector('.sidebar').appendChild(btn);
+        }
+        document.addEventListener('DOMContentLoaded', addNewChatroomButton);
+
+        // (Optional) You can add more Firebase-related functions here such as export/import
       });
     </script>
     
-    <!-- Real-Time Chat via PeerJS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.3.2/peerjs.min.js"></script>
+    <!-- Main Chat Script (wrapped in DOMContentLoaded) -->
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        // Create a new Peer instance.
-        var peer = new Peer(null, { debug: 3 });
-        var conn;
-
-        peer.on('error', function(err) {
-          console.error('Peer error:', err);
-        });
-
-        peer.on('open', function(id) {
-          console.log("My peer ID is: " + id);
-          // Shorten the peer ID to 8 characters
-          var shortId = id.substring(0, 8);
-          var peerIdDisplay = document.createElement("div");
-          peerIdDisplay.id = "peerIdDisplay";
-          peerIdDisplay.style.position = "fixed";
-          peerIdDisplay.style.top = "10px";
-          peerIdDisplay.style.right = "10px";
-          peerIdDisplay.style.background = "#fff";
-          peerIdDisplay.style.padding = "5px 10px";
-          peerIdDisplay.style.borderRadius = "5px";
-          peerIdDisplay.style.boxShadow = "0 2px 5px rgba(0,0,0,0.3)";
-          peerIdDisplay.textContent = "Your Peer ID: " + shortId;
-          document.body.appendChild(peerIdDisplay);
-        });
-
-        // Simple UI for connecting to a peer.
-        var connectDiv = document.createElement("div");
-        connectDiv.style.position = "fixed";
-        connectDiv.style.top = "50px";
-        connectDiv.style.right = "10px";
-        connectDiv.style.background = "#fff";
-        connectDiv.style.padding = "5px 10px";
-        connectDiv.style.borderRadius = "5px";
-        connectDiv.style.boxShadow = "0 2px 5px rgba(0,0,0,0.3)";
-        connectDiv.innerHTML =
-          'Connect to Peer: <input id="peerInput" type="text" placeholder="Peer ID" style="width:150px;"> <button id="connectButton">Connect</button>';
-        document.body.appendChild(connectDiv);
-
-        document.getElementById("connectButton").addEventListener("click", function(){
-          var peerId = document.getElementById("peerInput").value;
-          if(peerId) {
-            console.log("Attempting connection to peer: " + peerId);
-            conn = peer.connect(peerId);
-            conn.on('open', function() {
-              console.log("Connected to peer: " + peerId);
-            });
-            conn.on('data', function(data) {
-              console.log("Received data:", data);
-              data.sender = "remote";
-              appendMessageElement(data, false);
-            });
-            conn.on('error', function(err) {
-              console.error("Connection error:", err);
-            });
-          }
-        });
-
-        // Listen for incoming connections.
-        peer.on('connection', function(connection) {
-          console.log("Incoming connection from: " + connection.peer);
-          conn = connection;
-          conn.on('data', function(data) {
-            console.log("Received data on incoming connection:", data);
-            data.sender = "remote";
-            appendMessageElement(data, false);
-          });
-          conn.on('error', function(err) {
-            console.error("Incoming connection error:", err);
-          });
-        });
-
-        // Rename the sendMessage override variable to avoid duplicates.
-        var peerOriginalSendMessage = sendMessage;
-        sendMessage = function() {
-          peerOriginalSendMessage();
-          var chat = chatsData[activeChatId];
-          var lastMsg = chat.messages[chat.messages.length - 1];
-          if (conn && conn.open && lastMsg) {
-            console.log("Sending message via peer:", lastMsg);
-            conn.send(lastMsg);
-          } else {
-            console.warn("No open peer connection to send message");
-          }
+        // Place your existing chat code functions here:
+        // For example, you should already have functions like:
+        // - generateId()
+        // - formatTimestamp(date)
+        // - renderChatList(), renderChatHeader(), renderMessages(), appendMessageElement(msg, updateModel)
+        //
+        // Ensure that these functions are accessible globally.
+        //
+        // For demonstration, here’s a dummy implementation of appendMessageElement:
+        window.generateId = function() {
+          return '_' + Math.random().toString(36).substr(2, 9);
         };
+        window.formatTimestamp = function(date) {
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        };
+        window.appendMessageElement = function(msg, updateModel) {
+          // Append the message to the chatMessages element
+          var chatMessagesEl = document.getElementById('chatMessages');
+          var msgEl = document.createElement('div');
+          msgEl.className = 'message ' + (msg.sender === "user" ? "user" : "ai");
+          msgEl.dataset.messageId = msg.id;
+          msgEl.innerHTML = '<div class="text">' + msg.text + '</div>' +
+                            '<div class="timestamp">' + formatTimestamp(new Date(msg.timestamp)) + '</div>';
+          chatMessagesEl.appendChild(msgEl);
+          chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        };
+
+        // Call any existing initialization functions if necessary.
       });
     </script>
   </body>
